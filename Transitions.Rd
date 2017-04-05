@@ -5,14 +5,24 @@
 ## Project overview: Forest transitions (i.e., Changes in ecosystem type / forest composition and structure) as a function of disturbance history across the Southern Rockies
 
 # This code addresses:
-# Q1: Is a transition more likely to occur if fire is preceded by beetle infestation?
-# Q2: How many years after beetle infestation does a fire have a similar recovery trajectory as an area that did not experience infestation?
+# Q1: When is forest 'recovered'?
+# 	a. At how many years sonce fire does post-fire VCF Resemble pre-fire VCF?
+# 	b. Does this vary as a function of pre-fire MPB infestation?
+#	c. Does this vary as a function of pre-fire VCF?
+# Q2: Is a transition more likely to occur if fire is preceded by beetle infestation?
+# Q3: How many years after beetle infestation does a fire have a similar recovery trajectory as an area that did not experience infestation?
+
 
 # Data associated with this code:
 fish_pts_SR2.txt
 fish_pts_SR3.txt
 fish_pts_SR4.txt
 fish_pts_SR5.txt
+
+
+# Target journal(s): Forest ecology and management
+# Global change biology
+# Reach - TREE, but prob for later papers. Review paper instead?
 
 
 #### NOTE TO MAX:
@@ -661,22 +671,34 @@ NA
 ####################
 write.csv(merged_MPB_fire_VCF, "merged_MPB_fire_VCF.csv")
 ####################
+merged_MPB_fire_VCF<-read.csv("merged_MPB_fire_VCF.csv", header=TRUE)
+merged_MPB_fire_VCF<-merged_MPB_fire_VCF[,-1]
 
 
-
-# Q1: Is a transition more likely to occur if fire is preceded by beetle infestation?
-
-# Is post-fire forest recovery different between groups for each year after fire: 1) MPB infestation year of fire or any previous year 2) NOT MPB infestation year of fire or any previous year
-
-# Outstanding: Make sure no bias: that pre-fire MPB and pre-fire no MPB pixels have same distribution of pre-fire VCF. # To detect pre-fire bias in VCF, what's the mean VCF of pixels the year before a fire for pixels that have also had MPB vs those that have not?
-
-
-# Just for pixels that were 'forest' prefire (39.3 VCF)
+# Just for pixels that were 'forest' prefire (39.3 VCF) to make sure no bias in pre-fire VCF between MPB infestationa and not
 # VCF threshold that represents forest: 49.4 +/- 10.1; including sparse forest: 47.5 +/- 10.2. This was derived from selecting 100 forest GCPs (plus 25? 'sparse forest' GCPs) in Google Earth (imagery from 2012) and computing stats on VCF 2012 sampled at those points
 # If we do this, we're only looking at fires 2000-2015
 
 forest<-merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=39.3, ]
 
+# Make sure no bias: that pre-fire MPB and pre-fire no MPB pixels have same distribution of pre-fire VCF. # To detect pre-fire bias in VCF, what's the mean VCF of pixels the year before a fire for pixels that have also had MPB vs those that have not?
+t.test(merged_MPB_fire_VCF[merged_MPB_fire_VCF$yrs_infest_bf_fire>=0,]$VCF_before_fire, merged_MPB_fire_VCF[merged_MPB_fire_VCF$yrs_infest_bf_fire<0,]$VCF_before_fire, na.action="na.pass")
+# They are sig diff, but only by 1.4% VCF
+boxplot(merged_MPB_fire_VCF[merged_MPB_fire_VCF$yrs_infest_bf_fire>=0,]$VCF_before_fire, merged_MPB_fire_VCF[merged_MPB_fire_VCF$yrs_infest_bf_fire<0,]$VCF_before_fire, names=c("Infestation", "No infestation"), ylab="VCF pre-fire")
+
+
+t.test(forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire, forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire, na.action="na.pass")
+# They are not sig diff if just look at forest pixels
+boxplot(forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire, forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire, names=c("Infestation", "No infestation"), ylab="VCF pre-fire")
+
+
+###############
+###############
+
+# Q1: When is forest 'recovered'?
+# a. At how many years since fire does post-fire VCF Resemble pre-fire VCF?
+# b. Does this vary as a function of pre-fire MPB infestation?
+# c. Does this vary as a function of pre-fire VCF?
 
 ### Plot post-fire regrowth as a function of years since fire
 names(forest)
@@ -695,7 +717,10 @@ lines(VCF_post_fire_time$time, VCF_post_fire_low, lty=2)
 lines(VCF_post_fire_time$time, VCF_post_fire_high, xlab="Time since fire (years)", ylab="VCF", lty=2)
 
 # What accounts for the shape of this trend?
-
+# Carol - 
+# Could be post-fire die off, then 5-10 years seedling establishment, after 7-8 years no new establishment
+# Paper - Yellowstone - 30 years to 'full recovery' (density)? Could use this to make case for incorporating Landsat
+# ***diff pre and post-fire VCF
 
 ### Plot post-fire regrowth (relative to pre-fire VCF) as a function of years since fire
 # Reminder: pre-fire VCF minus post-fire VCF (positive numbers still recovering, negative numbers exceeded pre-fire VCF)
@@ -716,10 +741,184 @@ lines(VCF_pre_minus_post_fire_time$time, VCF_pre_minus_post_fire_time$VCF_pre_mi
 lines(VCF_pre_minus_post_fire_time$time, VCF_pre_minus_post_fire_low, lty=2)
 lines(VCF_pre_minus_post_fire_time$time, VCF_pre_minus_post_fire_high, lty=2)
 
-# What accounts for the shape of this trend?
+# a. Q: At how many years since fire does post-fire VCF Resemble pre-fire VCF?
+# A: More than 14
 
+# Below, using na.pass (rather than na.exclude) is same as: 
+# t.test(forest[complete.cases(forest[,65:66]),]$VCF_before_fire, forest[complete.cases(forest[,65:66]),]$VCF_since_fire0, na.action="na.exclude")
+# https://stat.ethz.ch/pipermail/r-help/2010-August/249146.html
+### Could be more efficient
+t.test(forest$VCF_before_fire, forest$VCF_since_fire0, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire1, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire2, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire3, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire4, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire5, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire6, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire7, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire8, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire9, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire10, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire11, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire12, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire13, paired=TRUE, na.action="na.pass")
+t.test(forest$VCF_before_fire, forest$VCF_since_fire14, paired=TRUE, na.action="na.pass")
+# Can only look 14 years post - all sig diff, so forest still not recovered 14 years out
+
+
+# Q: b. Does this vary as a function of pre-fire MPB infestation?
+# A: Prob not
+# Beetle infestation
+# Below, using na.pass, is same as:
+# t.test((forest[((complete.cases(forest[,c(65,66,48)])) & forest$yrs_infest_bf_fire>=0),]$VCF_before_fire), (forest[((complete.cases(forest[,c(65,66,48)])) & forest$yrs_infest_bf_fire>=0),]$VCF_since_fire0))
+### Could be more efficient
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire0), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire1), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire2), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire3), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire4), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire5), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire6), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire7), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire8), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire9), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire10), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire11), paired=TRUE, na.action="na.pass")
+# all above sig diff, so forest still not recovered after 11 years
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire12), paired=TRUE, na.action="na.pass")
+# Not different, so maybe recovered by 12 years after, but prob not enough obs. How many obs complete cases VCF bf and 12 years?
+nrow(forest[((complete.cases(forest[,c(65,78)])) & forest$yrs_infest_bf_fire>=0),]) #10
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire13), paired=TRUE, na.action="na.pass")
+# not enough obs bc no MPB before fire in 2000 or 2001
+t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire14)), paired=TRUE, na.action="na.pass")
+# not enough obs bc no MPB before fire in 2000
+
+# No Beetle infestation
+### Could be more efficient
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire0), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire1), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire2), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire3), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire4), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire5), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire6), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire7), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire8), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire9), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire10), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire11), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire12), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire13), paired=TRUE, na.action="na.pass")
+t.test((forest[forest$yrs_infest_bf_fire<0,]$VCF_before_fire), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire14), paired=TRUE, na.action="na.pass")
+# all sig diff, so forest still not recovered after 14 years 
+
+### Enough obs with MPB before fire to answer this?
+
+
+
+
+
+# Q: c. Does this vary as a function of pre-fire VCF?
+# A: not really. No pre-fire VCF category 'recovers,' but mean of pre-and post-fire VCF greater diff with increasing pre-fire VCF
+
+### Could be more efficient
+# Like, WAY more efficient
+# pre-fire VCF 0-19
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire0), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire1), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire2), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire3), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire4), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire5), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire6), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire7), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire8), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire9), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire10), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire11), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire12), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire13), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>0 & merged_MPB_fire_VCF$VCF_before_fire<20,]$VCF_since_fire14), paired=TRUE, na.action="na.pass")
+# still not recovered after 14 years bc all sig diff, but mean diff VCF in groups is 0-2% VCF. Meaningfully different?
+
+
+# pre-fire VCF 20-39
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire0), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire1), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire2), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire3), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire4), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire5), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire6), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire7), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire8), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire9), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire10), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire11), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire12), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire13), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=20 & merged_MPB_fire_VCF$VCF_before_fire<40,]$VCF_since_fire14), paired=TRUE, na.action="na.pass")
+# still not recovered after 14 years bc all sig diff, but mean diff VCF in groups is <6% VCF.
+
+# pre-fire VCF 40-59
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire0), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire1), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire2), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire3), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire4), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire5), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire6), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire7), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire8), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire9), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire10), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire11), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire12), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire13), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=40 & merged_MPB_fire_VCF$VCF_before_fire<60,]$VCF_since_fire14), paired=TRUE, na.action="na.pass")
+# still not recovered after 14 years bc all sig diff, and mean diff VCF in groups is ~5-15% VCF.
+
+# pre-fire VCF 60-79
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire0), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire1), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire2), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire3), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire4), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire5), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire6), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire7), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire8), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire9), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire10), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire11), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire12), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire13), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=60 & merged_MPB_fire_VCF$VCF_before_fire<80,]$VCF_since_fire14), paired=TRUE, na.action="na.pass")
+# still not recovered after 14 years bc all sig diff, and mean diff VCF in groups is ~10-20% VCF.
+
+# pre-fire VCF 80-100
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire0), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire1), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire2), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire3), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire4), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire5), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire6), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire7), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire8), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire9), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire10), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire11), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire12), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire13), paired=TRUE, na.action="na.pass")
+t.test((merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_before_fire), (merged_MPB_fire_VCF[merged_MPB_fire_VCF$VCF_before_fire>=80 & merged_MPB_fire_VCF$VCF_before_fire<=100,]$VCF_since_fire14), paired=TRUE, na.action="na.pass")
+# Not enough obs for this one
 
 ###############
+###############
+
+# Q2: Is a transition more likely to occur if fire is preceded by beetle infestation?
+# Is post-fire forest recovery different between groups for each year after fire: 1) MPB infestation year of fire or any previous year 2) NOT MPB infestation year of fire or any previous year
 
 
 ### Post-fire regrowth as a function of years since fire
@@ -760,36 +959,37 @@ t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire13), (forest[forest$
 
 
 # Plot the above
-VCF_post_fire_MPB<-forest[forest$yrs_infest_bf_fire>=0,c(65:86)]
-VCF_post_fire_noMPB<-forest[forest$yrs_infest_bf_fire<0,c(65:86)]
+names(forest)
+VCF_post_fire_MPB<-forest[forest$yrs_infest_bf_fire>=0,c(66:87)]
+VCF_post_fire_noMPB<-forest[forest$yrs_infest_bf_fire<0,c(66:87)]
 
 VCF_post_fire_MPB_mean<-apply(VCF_post_fire_MPB, 2, mean, na.rm=TRUE)
 VCF_post_fire_MPB_sd<-apply(VCF_post_fire_MPB, 2, sd, na.rm=TRUE)
-VCF_post_fire_MPB_low<-VCF_post_fire_MPB_mean[3:6]-VCF_post_fire_MPB_sd[3:6]
-VCF_post_fire_MPB_high<-VCF_post_fire_MPB_mean[3:6]+VCF_post_fire_MPB_sd[3:6]
+VCF_post_fire_MPB_low<-VCF_post_fire_MPB_mean[2:5]-VCF_post_fire_MPB_sd[2:5]
+VCF_post_fire_MPB_high<-VCF_post_fire_MPB_mean[2:5]+VCF_post_fire_MPB_sd[2:5]
 
 VCF_post_fire_noMPB_mean<-apply(VCF_post_fire_noMPB, 2, mean, na.rm=TRUE)
 VCF_post_fire_noMPB_sd<-apply(VCF_post_fire_noMPB, 2, sd, na.rm=TRUE)
-VCF_post_fire_noMPB_low<-VCF_post_fire_noMPB_mean[3:6]-VCF_post_fire_noMPB_sd[3:6]
-VCF_post_fire_noMPB_high<-VCF_post_fire_noMPB_mean[3:6]+VCF_post_fire_noMPB_sd[3:6]
+VCF_post_fire_noMPB_low<-VCF_post_fire_noMPB_mean[2:5]-VCF_post_fire_noMPB_sd[2:5]
+VCF_post_fire_noMPB_high<-VCF_post_fire_noMPB_mean[2:5]+VCF_post_fire_noMPB_sd[2:5]
 
 time<-c(-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
 
 VCF_post_fire_MPB_time<-data.frame(VCF_post_fire_MPB_mean,time)
 VCF_post_fire_noMPB_time<-data.frame(VCF_post_fire_noMPB_mean, time)
 
-plot(VCF_post_fire_MPB_time$time, VCF_post_fire_MPB_time$VCF_post_fire_MPB_mean, xlab="Time since fire (years)", ylab="VCF", type="p", col="red", xlim=range(1:3), ylim=range(0:75))
+plot(VCF_post_fire_MPB_time$time, VCF_post_fire_MPB_time$VCF_post_fire_MPB_mean, xlab="Time since fire (years)", ylab="VCF", type="p", col="red", xlim=range(0:3), ylim=range(0:75))
 lines(VCF_post_fire_MPB_time$time, VCF_post_fire_MPB_time$VCF_post_fire_MPB_mean, col="red")
-lines(VCF_post_fire_MPB_time$time[3:6], VCF_post_fire_MPB_low, col="red", lty=2)
-lines(VCF_post_fire_MPB_time$time[3:6], VCF_post_fire_MPB_high, col="red", lty=2)
+lines(VCF_post_fire_MPB_time$time[2:5], VCF_post_fire_MPB_low, col="red", lty=2)
+lines(VCF_post_fire_MPB_time$time[2:5], VCF_post_fire_MPB_high, col="red", lty=2)
 
 points(VCF_post_fire_noMPB_time$time, VCF_post_fire_noMPB_time$VCF_post_fire_noMPB_mean, col="blue")
 lines(VCF_post_fire_noMPB_time$time, VCF_post_fire_noMPB_time$VCF_post_fire_noMPB_mean, col="blue")
-lines(VCF_post_fire_noMPB_time$time[3:6], VCF_post_fire_noMPB_low, col="blue", lty=2)
-lines(VCF_post_fire_noMPB_time$time[3:6], VCF_post_fire_noMPB_high, col="blue", lty=2)
+lines(VCF_post_fire_noMPB_time$time[2:5], VCF_post_fire_noMPB_low, col="blue", lty=2)
+lines(VCF_post_fire_noMPB_time$time[2:5], VCF_post_fire_noMPB_high, col="blue", lty=2)
 
 # would this look more impressive on another scale or something?
-
+# not log
 
 
 
@@ -827,6 +1027,7 @@ t.test((forest[forest$yrs_infest_bf_fire>=0,]$pre_minus_14yrs_post_fire_VCF), (f
 
 
 # Plot the above
+names(forest)
 VCF_pre_post_fire_MPB<-forest[forest$yrs_infest_bf_fire>=0,c(87:100)]
 VCF_pre_post_fire_noMPB<-forest[forest$yrs_infest_bf_fire<0,c(87:100)]
 
@@ -864,21 +1065,35 @@ lines(VCF_pre_post_fire_noMPB_time$time[1:3], VCF_pre_post_fire_noMPB_high, col=
 ###############
 # NEXT / further thought:
 
-# Instead of restricting analysis to pre-fire forest pixels, maybe restrict to same pre-fire VCF as MPB-infested pixels
+# Confounding factors - Climate, elevation / slope / aspect
+# If fire was in drought year / high fire incidence year
+# precip figure - fire severity
+# Elevation, slope aspect - recovery 
 
-# Q2: How many years after beetle infestation does a fire have a similar recovery trajectory as an area that did not experience infestation? (years between beetle and fire)
-# Evaluate this trend as a function of time between MPB infestation and fire. VCF 0-20 years post-fire for 0-x years between MPB infestation and fire 
-
-# If fire was in drought year / more than one fire
+# integrate other infestation in here
 
 # instead of tests for each year, one test with pixel as random effect?
 
+# FRP / severity for each fire / dNBR or rdNBR value
+
+
+# Because pre-fire VCF higher in MPB-infested pixels as not MPB-infested pixels (but mimimally), then what does this mean?
+
+# Q3: How many years after beetle infestation does a fire have a similar recovery trajectory as an area that did not experience infestation? (years between beetle and fire)
+# Evaluate this trend as a function of time between MPB infestation and fire. VCF 0-20 years post-fire for 0-x years between MPB infestation and fire 
+
 # buffer around fire and MPB (i.e., expand the area slightly to account for error)
 
-# FRP / severity for each fire
 ###############
 
 
+# New for Carol:
+# Q. "recovery?
+# A: "not recovered after 14 years, 
+# A: Does this vary as a function of pre-fire MPB? Still not recovered after 14 years, independent of previous MPB (but not lot of MPB obs)
+# A: Does this vary as a function of pre-fire VCF? Not really. No pre-fire VCF category 'recovers,' but mean of pre-and post-fire VCF greater diff with increasing pre-fire VCF
+
+# If restricting analysis to pre-fire forest pixels, no diff in pre-fire VCF for MPB-infested and not MPB-infested pixels
 
 ##################################################
 #################### SCRATCH####################
