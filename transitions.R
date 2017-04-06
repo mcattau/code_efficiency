@@ -9,21 +9,13 @@
 # Q2: How many years after beetle infestation does a fire have a similar recovery trajectory as an area that did not experience infestation?
 
 # Data associated with this code:
-fish_pts_SR2.txt
-fish_pts_SR3.txt
-fish_pts_SR4.txt
-fish_pts_SR5.txt
+# fish_pts_SR2.txt
+# fish_pts_SR3.txt
+# fish_pts_SR4.txt
+# fish_pts_SR5.txt
 
 
-#### NOTE TO MAX:
-# Areas of the code that I know could be more efficient ara flagged with "### Could be more efficient"
-
-
-setwd("/Users/megancattau/Dropbox/0_EarthLab/Disturbance")
-setwd("/Users/meca3122/Dropbox/0_EarthLab/Disturbance")
-getwd()
-
-
+library(tidyverse)
 
 # Import fire data 
 # These are 250m rasters of the Geomac / MTBS data sampled at fishnet label points (corresponding to 250m fishnet). A separate raster was sampled for each year, and the fire-present values in each raster are the year that that fire occurred. Values for pixels where there was no fire are 0 or -9999
@@ -58,33 +50,28 @@ names(MPB)<-c("FID", "Id", "1994", "1995", "1996", "1997", "1998", "1999", "2000
 MPB<-MPB[,-2]
 
 # change MPB to year rather than area
-### Could be more efficient
-MPB$"1994mpb"<-ifelse(MPB$"1994">0, 1994, 0)
-MPB$"1995mpb"<-ifelse(MPB$"1995">0, 1995, 0)
-MPB$"1996mpb"<-ifelse(MPB$"1996">0, 1996, 0)
-MPB$"1997mpb"<-ifelse(MPB$"1997">0, 1997, 0)
-MPB$"1998mpb"<-ifelse(MPB$"1998">0, 1998, 0)
-MPB$"1999mpb"<-ifelse(MPB$"1999">0, 1999, 0)
-MPB$"2000mpb"<-ifelse(MPB$"2000">0, 2000, 0)
-MPB$"2001mpb"<-ifelse(MPB$"2001">0, 2001, 0)
-MPB$"2002mpb"<-ifelse(MPB$"2002">0, 2002, 0)
-MPB$"2003mpb"<-ifelse(MPB$"2003">0, 2003, 0)
-MPB$"2004mpb"<-ifelse(MPB$"2004">0, 2004, 0)
-MPB$"2005mpb"<-ifelse(MPB$"2005">0, 2005, 0)
-MPB$"2006mpb"<-ifelse(MPB$"2006">0, 2006, 0)
-MPB$"2007mpb"<-ifelse(MPB$"2007">0, 2007, 0)
-MPB$"2008mpb"<-ifelse(MPB$"2008">0, 2008, 0)
-MPB$"2009mpb"<-ifelse(MPB$"2009">0, 2009, 0)
-MPB$"2010mpb"<-ifelse(MPB$"2010">0, 2010, 0)
-MPB$"2011mpb"<-ifelse(MPB$"2011">0, 2011, 0)
-MPB$"2012mpb"<-ifelse(MPB$"2012">0, 2012, 0)
-MPB$"2013mpb"<-ifelse(MPB$"2013">0, 2013, 0)
-MPB$"2014mpb"<-ifelse(MPB$"2014">0, 2014, 0)
-MPB$"2015mpb"<-ifelse(MPB$"2015">0, 2015, 0)
+get_year_range <- function(df) {
+  # helper function to get years from data frame column names
+  names(df) %>%
+    parse_number %>%
+    na.omit
+}
+
+# range of years in MPB data
+mpb_year_range <- get_year_range(MPB)
+
+# for each year, if the value in that column is positive, plug in the value of 
+# year, otherwise, plug in zero
+for (year in mpb_year_range) {
+  new_colname <- paste0(year, "mpb")
+  MPB[[new_colname]] <- ifelse(MPB[[as.character(year)]] > 0, 
+                               year, 
+                               0)
+}
 
 # Get the max year for each row (i.e. year of last MPB infestation)
 names(MPB)
-MPB<-MPB[,c(-23:-2)]
+MPB<-MPB[,c(-23:-2)] # remove old columns
 MPB$last_infest<-apply(MPB[,-1], 1, max)
 head(MPB, n=50)
 
@@ -120,26 +107,11 @@ names(VCF)<-c("FID", "Id", "2000", "2001", "2002", "2003", "2004", "2005", "2006
 VCF<-VCF[,-2]
 
 ### Change VCF > 100 to NA (200 is water and 253 is NA)
-
-### Could be more efficient
-
-VCF$"2000"<-ifelse(VCF$"2000">100, NA, VCF$"2000")
-VCF$"2001"<-ifelse(VCF$"2001">100, NA, VCF$"2001")
-VCF$"2002"<-ifelse(VCF$"2002">100, NA, VCF$"2002")
-VCF$"2003"<-ifelse(VCF$"2003">100, NA, VCF$"2003")
-VCF$"2004"<-ifelse(VCF$"2004">100, NA, VCF$"2004")
-VCF$"2005"<-ifelse(VCF$"2005">100, NA, VCF$"2005")
-VCF$"2006"<-ifelse(VCF$"2006">100, NA, VCF$"2006")
-VCF$"2007"<-ifelse(VCF$"2007">100, NA, VCF$"2007")
-VCF$"2008"<-ifelse(VCF$"2008">100, NA, VCF$"2008")
-VCF$"2009"<-ifelse(VCF$"2009">100, NA, VCF$"2009")
-VCF$"2010"<-ifelse(VCF$"2010">100, NA, VCF$"2010")
-VCF$"2011"<-ifelse(VCF$"2011">100, NA, VCF$"2011")
-VCF$"2012"<-ifelse(VCF$"2012">100, NA, VCF$"2012")
-VCF$"2013"<-ifelse(VCF$"2013">100, NA, VCF$"2013")
-VCF$"2014"<-ifelse(VCF$"2014">100, NA, VCF$"2014")
-VCF$"2015"<-ifelse(VCF$"2015">100, NA, VCF$"2015")
-
+vcf_year_range <- get_year_range(VCF)
+for (year in vcf_year_range) {
+  vals <- VCF[[as.character(year)]]
+  VCF[[as.character(year)]] <- ifelse(vals > 100, NA, vals)
+}
 
 # merge data
 names(merged_MPB_fire)
@@ -159,329 +131,39 @@ head(merged_MPB_fire_VCF)
 # Outstanding: should stop at VCF_since_fire5 because the sample size starts to go down? Can account for this somehow?
 # "_0 is the VCF from JD065 of the following year since the fire happened
 
-### Could be more efficient
+# specify lags to consider and corresponding column names
+lags <- 0:21
+new_columns <- ifelse(lags > 0, 
+                      paste0("VCF_since_fire", lags - 1), 
+                      "VCF_before_fire")
 
-merged_MPB_fire_VCF$VCF_before_fire<-
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2000.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2001.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2002.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2003.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2006, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2007, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2008, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2009, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2010, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2011, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2012, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2013, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2014, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2015, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))))))))))
+# convert data to long form so that we can do index matching on lags
+long_mpb_vcf <- merged_MPB_fire_VCF %>%
+  tbl_df %>%
+  select(FID, last_burn, ends_with(".y")) %>%
+  gather(vcf_year, vcf, -last_burn, -FID) %>%
+  mutate(vcf_year = parse_number(vcf_year)) %>%
+  arrange(FID)
 
-merged_MPB_fire_VCF$VCF_since_fire0<-
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2000.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2001.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2002.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2003.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2006, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2007, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2008, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2009, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2010, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2011, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2012, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2013, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2014, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))))))))))
+# for each new column, create the column of lagged values and merge back
+for (i in seq_along(new_columns)) {
+  new_df <- long_mpb_vcf %>%
+    group_by(FID) %>%
+    summarize(newcol = unique(vcf[match(last_burn, vcf_year - lags[i])])) %>%
+    rename_(.dots = setNames("newcol", new_columns[i]))
+  long_mpb_vcf <- long_mpb_vcf %>%
+    left_join(new_df)
+}
 
-merged_MPB_fire_VCF$VCF_since_fire1<-
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2000.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2001.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2002.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2003.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2006, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2007, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2008, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2009, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2010, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2011, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2012, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2013, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))))))))))
+# get one row per FID
+long_mpb_vcf <- long_mpb_vcf %>%
+  select(-vcf_year, -vcf) %>%
+  distinct()
 
-merged_MPB_fire_VCF$VCF_since_fire2<-
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2000.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2001.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2002.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2003.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2006, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2007, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2008, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2009, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2010, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2011, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2012, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire3<-
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2000.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2001.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2002.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2003.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2006, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2007, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2008, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2009, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2010, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2011, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire4<-
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2000.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2001.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2002.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2003.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2006, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2007, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2008, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2009, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2010, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire5<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2000.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2001.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2002.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2003.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2006, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2007, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2008, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2009, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire6<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2001.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2002.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2003.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2006, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2007, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2008, merged_MPB_fire_VCF$"2015.y",
-NA
-)))))))))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire7<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2002.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2003.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2006, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2007, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire8<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2003.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2006, merged_MPB_fire_VCF$"2015.y",
-NA
-)))))))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire9<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2004.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2005, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire10<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2005.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2004, merged_MPB_fire_VCF$"2015.y",
-NA
-)))))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire11<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2006.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2003, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire12<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2007.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2002, merged_MPB_fire_VCF$"2015.y",
-NA
-)))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire13<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2008.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2001, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))))
-
-merged_MPB_fire_VCF$VCF_since_fire14<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2009.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==2000, merged_MPB_fire_VCF$"2015.y",
-NA
-)))))))
-
-merged_MPB_fire_VCF$VCF_since_fire15<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2010.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1999, merged_MPB_fire_VCF$"2015.y",
-NA
-))))))
-
-merged_MPB_fire_VCF$VCF_since_fire16<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2011.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1998, merged_MPB_fire_VCF$"2015.y",
-NA
-)))))
-
-merged_MPB_fire_VCF$VCF_since_fire17<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2012.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1997, merged_MPB_fire_VCF$"2015.y",
-NA
-))))
-
-merged_MPB_fire_VCF$VCF_since_fire18<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2013.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1996, merged_MPB_fire_VCF$"2015.y",
-NA
-)))
-
-merged_MPB_fire_VCF$VCF_since_fire19<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2014.y",
-ifelse(merged_MPB_fire_VCF$last_burn==1995, merged_MPB_fire_VCF$"2015.y",
-NA
-))
-
-merged_MPB_fire_VCF$VCF_since_fire20<-
-ifelse(merged_MPB_fire_VCF$last_burn==1994, merged_MPB_fire_VCF$"2015.y",
-NA
-)
-
-head(merged_MPB_fire_VCF, n=25)
+# merge back into main df
+merged_MPB_fire_VCF <- merged_MPB_fire_VCF %>%
+  full_join(long_mpb_vcf) %>%
+  tbl_df
 
 
 
@@ -494,7 +176,9 @@ head(merged_MPB_fire_VCF, n=25)
 
 # "_0 is the VCF from JD065 of the following year since the fire happened
 
-### Could be more efficient
+# Below you could use the same approach as just above! The call to match() will
+# be a little different though. You might find the dplyr::lag() function useful
+# to specify differences among vcf_year with different intervals - MJ
 
 merged_MPB_fire_VCF$pre_minus_1yrs_post_fire_VCF<-
 ifelse(merged_MPB_fire_VCF$last_burn==2000, (merged_MPB_fire_VCF$"2000.y" - merged_MPB_fire_VCF$"2002.y"),
@@ -728,6 +412,8 @@ names(forest)
 # Reminder: yrs_infest_bf_fire is last_burn-last_infest, so positive numbers are when MPB happened before fire
 
 ### Could be more efficient
+
+# tons of t-tests are probably not a great idea! We can chat more about this IRL
 
 t.test((forest[forest$yrs_infest_bf_fire>=0,]$VCF_since_fire0), (forest[forest$yrs_infest_bf_fire<0,]$VCF_since_fire0))
 # Different mean**
